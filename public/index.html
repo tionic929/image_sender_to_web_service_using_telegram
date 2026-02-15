@@ -11,167 +11,724 @@
     <style> 
         [x-cloak] { display: none !important; }
         .lightbox-open { overflow: hidden; }
-        * { -webkit-tap-highlight-color: transparent; -webkit-touch-callout: none; }
-        html { scroll-behavior: smooth; }
-        ::-webkit-scrollbar { width: 4px; height: 4px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border-radius: 2px; }
-        body { overscroll-behavior: none; -webkit-overflow-scrolling: touch; }
-        .item-selected { animation: selectPulse 0.2s ease-out; }
-        @keyframes selectPulse { 0% { transform: scale(1); } 50% { transform: scale(0.95); } 100% { transform: scale(1); } }
-        .slide-up { animation: slideUp 0.3s ease-out; }
-        @keyframes slideUp { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-        .swipe-indicator { width: 40px; height: 4px; background: rgba(255, 255, 255, 0.3); border-radius: 2px; margin: 0 auto; }
+        
+        /* Mobile touch optimizations */
+        * {
+            -webkit-tap-highlight-color: transparent;
+            -webkit-touch-callout: none;
+        }
+        
+        /* Smooth scrolling */
+        html {
+            scroll-behavior: smooth;
+        }
+        
+        /* Custom scrollbar for mobile webkit */
+        ::-webkit-scrollbar {
+            width: 4px;
+            height: 4px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 2px;
+        }
+        
+        /* Prevent iOS bounce on body */
+        body {
+            overscroll-behavior: none;
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        /* Animate selection */
+        .item-selected {
+            animation: selectPulse 0.2s ease-out;
+        }
+        
+        @keyframes selectPulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(0.95); }
+            100% { transform: scale(1); }
+        }
+        
+        /* Bottom sheet animation */
+        .slide-up {
+            animation: slideUp 0.3s ease-out;
+        }
+        
+        @keyframes slideUp {
+            from {
+                transform: translateY(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+        
+        /* Swipeable indicator */
+        .swipe-indicator {
+            width: 40px;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 2px;
+            margin: 0 auto;
+        }
     </style>
 </head>
 <body class="bg-zinc-950 text-zinc-100 min-h-screen pb-20 sm:pb-8" x-data="galleryApp()" x-init="init()">
 
+    <!-- Mobile Header -->
     <header class="sticky top-0 z-50 bg-zinc-950/95 border-b border-zinc-800 backdrop-blur-lg">
+        <!-- Top Bar -->
         <div class="px-4 py-3 sm:px-6 sm:py-4">
             <div class="flex justify-between items-center">
                 <div class="flex-1">
-                    <h1 class="text-base sm:text-xl font-black tracking-tighter text-emerald-500 italic">MEDIA_CLOUD_OS</h1>
+                    <h1 class="text-base sm:text-xl font-black tracking-tighter text-emerald-500 italic">
+                        MEDIA_CLOUD_OS
+                    </h1>
                     <div class="flex gap-2 items-center mt-0.5">
-                        <p class="text-[8px] sm:text-[9px] font-mono text-zinc-500 uppercase" x-text="isDownloading ? 'Downloading...' : 'Cloud Storage Active'"></p>
-                        <span class="text-[8px] sm:text-[9px] text-zinc-600" x-text="stats.totalFiles + ' files'"></span>
+                        <p class="text-[8px] sm:text-[9px] font-mono text-zinc-500 uppercase" 
+                           x-text="isDownloading ? 'Downloading...' : 'Cloud Storage Active'"></p>
+                        <span class="hidden sm:inline text-[8px] sm:text-[9px] text-zinc-600">•</span>
+                        <span class="text-[8px] sm:text-[9px] text-zinc-600" 
+                              x-text="stats.totalFiles + ' files'"></span>
+                        <template x-if="stats.totalSize && stats.totalSize !== '0 MB'">
+                            <span class="hidden sm:inline text-[8px] sm:text-[9px] text-zinc-600" 
+                                  x-text="'· ' + stats.totalSize"></span>
+                        </template>
                     </div>
                 </div>
-                <button @click="showMenu = !showMenu" class="sm:hidden p-2 -mr-2 active:bg-zinc-900 rounded-lg transition">
+                
+                <!-- Mobile Menu Button -->
+                <button @click="showMenu = !showMenu" 
+                        class="sm:hidden p-2 -mr-2 active:bg-zinc-900 rounded-lg transition">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path x-show="!showMenu" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
-                        <path x-show="showMenu" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        <path x-show="!showMenu" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                              d="M4 6h16M4 12h16M4 18h16"/>
+                        <path x-show="showMenu" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                              d="M6 18L18 6M6 6l12 12"/>
                     </svg>
                 </button>
+                
+                <!-- Desktop Actions -->
                 <div class="hidden sm:flex gap-3">
-                    <button @click="downloadAllIndividual()" class="text-[11px] font-bold bg-white text-black px-4 py-2 rounded-lg">DOWNLOAD ALL</button>
-                    <button @click="toggleSelectionMode()" class="text-[11px] font-bold bg-zinc-800 px-4 py-2 rounded-lg" x-text="selectionMode ? 'EXIT SELECT' : 'SELECT'"></button>
+                    <button @click="downloadAllIndividual()" 
+                            class="text-[11px] font-bold bg-white text-black px-4 py-2 rounded-lg hover:bg-zinc-200 transition">
+                        DOWNLOAD ALL
+                    </button>
+                    <button @click="toggleSelectionMode()" 
+                            class="text-[11px] font-bold bg-zinc-800 px-4 py-2 rounded-lg hover:bg-zinc-700 transition" 
+                            x-text="selectionMode ? 'EXIT SELECT' : 'SELECT'">
+                    </button>
                 </div>
             </div>
         </div>
+        
+        <!-- Mobile Menu Dropdown -->
+        <div x-show="showMenu" 
+             x-transition:enter="transition ease-out duration-200"
+             x-transition:enter-start="opacity-0 -translate-y-1"
+             x-transition:enter-end="opacity-100 translate-y-0"
+             class="sm:hidden border-t border-zinc-800 bg-zinc-950">
+            <div class="px-4 py-3 space-y-2">
+                <button @click="downloadAllIndividual(); showMenu = false" 
+                        class="w-full text-left text-sm font-bold bg-white text-black px-4 py-3 rounded-lg active:bg-zinc-200 transition">
+                    DOWNLOAD ALL
+                </button>
+                <button @click="toggleSelectionMode(); showMenu = false" 
+                        class="w-full text-left text-sm font-bold bg-zinc-800 px-4 py-3 rounded-lg active:bg-zinc-700 transition" 
+                        x-text="selectionMode ? 'EXIT SELECT MODE' : 'SELECT MODE'">
+                </button>
+                <button @click="clearCache(); showMenu = false" 
+                        class="w-full text-left text-sm font-bold text-red-500 px-4 py-3 rounded-lg active:bg-zinc-900 transition">
+                    RESET CACHE
+                </button>
+            </div>
+        </div>
+        
+        <!-- Search Bar -->
         <div class="px-4 pb-3 sm:px-6">
             <div class="relative">
-                <input type="search" x-model="searchQuery" placeholder="Search cloud media..." class="w-full bg-zinc-900 border border-zinc-800 rounded-lg pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:border-emerald-500 transition">
-                <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" 
+                     fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                          d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                </svg>
+                <input 
+                    type="search" 
+                    x-model="searchQuery"
+                    placeholder="Search cloud media..."
+                    class="w-full bg-zinc-900 border border-zinc-800 rounded-lg pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:border-emerald-500 transition">
+                <button x-show="searchQuery" 
+                        @click="searchQuery = ''"
+                        class="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 active:text-zinc-300">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
             </div>
         </div>
     </header>
 
+    <!-- Loading State -->
+    <div x-show="loading" x-cloak 
+         class="fixed inset-0 bg-zinc-950/90 z-50 flex items-center justify-center">
+        <div class="text-center px-4">
+            <div class="w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mb-4 mx-auto"></div>
+            <p class="text-sm text-zinc-400">Loading media...</p>
+        </div>
+    </div>
+
+    <!-- Error Toast -->
+    <div x-show="errorMessage" 
+         x-transition
+         class="fixed top-20 left-4 right-4 sm:left-auto sm:right-8 sm:w-auto z-50 bg-red-600 text-white px-4 py-3 sm:px-6 sm:py-4 rounded-lg shadow-2xl">
+        <p class="text-xs sm:text-sm font-bold" x-text="errorMessage"></p>
+    </div>
+
+    <!-- Mobile Selection Toolbar (Bottom Sheet) -->
+    <div x-show="selectedItems.length > 0" 
+         x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="translate-y-full"
+         x-transition:enter-end="translate-y-0"
+         class="fixed bottom-0 left-0 right-0 z-50 bg-emerald-600 px-4 py-4 sm:hidden slide-up safe-area-bottom">
+        <div class="swipe-indicator mb-3"></div>
+        <div class="space-y-2">
+            <div class="text-center">
+                <span class="text-sm font-black" x-text="selectedItems.length + ' ITEMS SELECTED'"></span>
+            </div>
+            <div class="grid grid-cols-3 gap-2">
+                <button @click="createGroupFromSelected()" 
+                        class="bg-black text-white text-xs font-bold px-3 py-3 rounded-lg active:bg-zinc-900 transition">
+                    SAVE
+                </button>
+                <button @click="downloadListIndividual(selectedItems.map(i => i.url))" 
+                        class="bg-white text-black text-xs font-bold px-3 py-3 rounded-lg active:bg-zinc-200 transition">
+                    DOWNLOAD
+                </button>
+                <button @click="deleteSelected()" 
+                        class="bg-red-600 text-white text-xs font-bold px-3 py-3 rounded-lg active:bg-red-700 transition">
+                    DELETE
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Desktop Selection Toolbar -->
+    <div x-show="selectedItems.length > 0" 
+         x-transition
+         class="hidden sm:flex fixed bottom-10 left-1/2 -translate-x-1/2 z-50 bg-emerald-600 px-6 py-4 rounded-2xl shadow-2xl">
+        <div class="flex items-center gap-8">
+            <span class="text-sm font-black" x-text="selectedItems.length + ' ITEMS SELECTED'"></span>
+            <div class="flex gap-2">
+                <button @click="createGroupFromSelected()" 
+                        class="bg-black text-white text-[10px] font-bold px-4 py-2 rounded-lg hover:bg-zinc-900 transition">
+                    SAVE GROUP
+                </button>
+                <button @click="downloadListIndividual(selectedItems.map(i => i.url))" 
+                        class="bg-white text-black text-[10px] font-bold px-4 py-2 rounded-lg hover:bg-zinc-200 transition">
+                    DOWNLOAD
+                </button>
+                <button @click="deleteSelected()" 
+                        class="bg-red-600 text-white text-[10px] font-bold px-4 py-2 rounded-lg hover:bg-red-700 transition">
+                    DELETE
+                </button>
+            </div>
+        </div>
+    </div>
+
     <main class="px-4 py-4 sm:px-6 sm:py-8 max-w-7xl mx-auto">
+        
+        <!-- Saved Collections -->
+        <div x-show="customGroups.length > 0" class="mb-8 sm:mb-12">
+            <h2 class="text-[9px] sm:text-[10px] font-mono text-zinc-500 mb-3 sm:mb-4 uppercase tracking-widest">
+                Cached Collections
+            </h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
+                <template x-for="(group, index) in customGroups" :key="index">
+                    <div class="bg-zinc-900 border border-zinc-800 p-4 rounded-xl flex justify-between items-center active:border-zinc-700 transition">
+                        <div class="flex-1 min-w-0">
+                            <p class="font-bold text-sm truncate" x-text="group.name"></p>
+                            <p class="text-[10px] text-zinc-500" x-text="group.items.length + ' Files'"></p>
+                        </div>
+                        <div class="flex gap-3 ml-3">
+                            <button @click="downloadListIndividual(group.items.map(i => i.url))" 
+                                    class="text-emerald-500 text-xs font-bold active:text-emerald-400 px-2 py-1">
+                                DL
+                            </button>
+                            <button @click="deleteGroup(index)" 
+                                    class="text-red-500 text-xs font-bold active:text-red-400 px-2 py-1">
+                                DEL
+                            </button>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </div>
+
+        <!-- Media Grid -->
         <template x-for="(group, date) in filteredMedia" :key="date">
-            <div class="mb-8">
-                <h3 class="text-[10px] font-black text-zinc-400 mb-4 uppercase tracking-widest" x-text="date"></h3>
-                <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
+            <div class="mb-8 sm:mb-12">
+                <h3 class="text-[10px] sm:text-xs font-black text-zinc-400 mb-4 sm:mb-6 uppercase tracking-widest" 
+                    x-text="date"></h3>
+                <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2 sm:gap-4">
                     <template x-for="item in group" :key="item.url">
                         <div @click="handleItemClick(item)" 
-                             class="relative aspect-square rounded-lg overflow-hidden border-2 transition-all cursor-pointer"
-                             :class="isSelected(item) ? 'border-emerald-500 scale-95' : 'border-zinc-900'">
-                            <template x-if="item.type === 'image'"><img :src="item.url" class="w-full h-full object-cover" loading="lazy"></template>
-                            <template x-if="item.type === 'video'"><video :src="item.url" class="w-full h-full object-cover" muted></video></template>
-                            <div x-show="selectionMode" class="absolute top-1.5 right-1.5"><div class="w-5 h-5 rounded-full border-2" :class="isSelected(item) ? 'bg-emerald-500 border-emerald-500' : 'bg-black/50 border-white/30'"></div></div>
+                             @touchstart="handleTouchStart($event, item)"
+                             @touchend="handleTouchEnd($event)"
+                             class="relative aspect-square rounded-lg sm:rounded-xl overflow-hidden border-2 transition-all cursor-pointer group active:scale-95"
+                             :class="isSelected(item) ? 'border-emerald-500 scale-95' : 'border-zinc-900 active:border-zinc-700'">
+                            
+                            <!-- Image -->
+                            <template x-if="item.type === 'image'">
+                                <img :src="item.url" 
+                                     class="w-full h-full object-cover"
+                                     loading="lazy">
+                            </template>
+                            
+                            <!-- Video -->
+                            <template x-if="item.type === 'video'">
+                                <div class="relative w-full h-full">
+                                    <video :src="item.url" 
+                                           class="w-full h-full object-cover" 
+                                           muted 
+                                           preload="metadata"
+                                           playsinline></video>
+                                    <div class="absolute inset-0 bg-black/30 flex items-center justify-center">
+                                        <svg class="w-8 h-8 sm:w-12 sm:h-12 text-white opacity-80" 
+                                             fill="currentColor" viewBox="0 0 20 20">
+                                            <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z"/>
+                                        </svg>
+                                    </div>
+                                </div>
+                            </template>
+                            
+                            <!-- Selection Checkbox -->
+                            <div x-show="selectionMode" 
+                                 class="absolute top-1.5 right-1.5 sm:top-2 sm:right-2 z-10">
+                                <div class="w-5 h-5 sm:w-6 sm:h-6 rounded-full border-2 flex items-center justify-center shadow-lg"
+                                     :class="isSelected(item) ? 'bg-emerald-500 border-emerald-500' : 'bg-zinc-900/80 border-zinc-700'">
+                                    <svg x-show="isSelected(item)" 
+                                         class="w-3 h-3 sm:w-4 sm:h-4 text-white" 
+                                         fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/>
+                                    </svg>
+                                </div>
+                            </div>
+                            
+                            <!-- Hover/Touch Info -->
+                            <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-1.5 sm:p-2 opacity-0 group-hover:opacity-100 group-active:opacity-100 transition-opacity pointer-events-none">
+                                <p class="text-[8px] sm:text-[9px] text-white font-mono truncate" x-text="item.size"></p>
+                            </div>
                         </div>
                     </template>
                 </div>
             </div>
         </template>
+
+        <!-- Empty State -->
+        <div x-show="Object.keys(filteredMedia).length === 0 && !loading" 
+             class="text-center py-16 sm:py-20 px-4">
+            <svg class="w-12 h-12 sm:w-16 sm:h-16 mx-auto text-zinc-700 mb-4" 
+                 fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                      d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+            </svg>
+            <p class="text-zinc-500 text-sm">No media found</p>
+            <p class="text-zinc-600 text-xs mt-2">Send photos or videos via Telegram bot</p>
+        </div>
     </main>
 
-    <div x-show="selectedItems.length > 0" class="fixed bottom-0 left-0 right-0 z-50 bg-emerald-600 px-4 py-4 slide-up">
-        <div class="flex justify-between items-center max-w-7xl mx-auto">
-            <span class="text-sm font-black" x-text="selectedItems.length + ' SELECTED'"></span>
-            <div class="flex gap-2">
-                <button @click="createGroupFromSelected()" class="bg-black text-white text-xs font-bold px-4 py-2 rounded-lg">SAVE</button>
-                <button @click="deleteSelected()" class="bg-red-600 text-white text-xs font-bold px-4 py-2 rounded-lg">DELETE</button>
+    <!-- Lightbox Modal -->
+    <div x-show="lightbox.open" 
+         @click.self="closeLightbox()" 
+         @touchstart="handleLightboxTouchStart($event)"
+         @touchmove="handleLightboxTouchMove($event)"
+         @touchend="handleLightboxTouchEnd($event)"
+         class="fixed inset-0 bg-black z-[100] flex items-center justify-center"
+         x-transition>
+        
+        <!-- Close Button -->
+        <button @click="closeLightbox()" 
+                class="absolute top-4 right-4 sm:top-8 sm:right-8 text-white active:text-zinc-400 transition z-10 p-2 active:bg-white/10 rounded-full">
+            <svg class="w-6 h-6 sm:w-8 sm:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+        </button>
+        
+        <!-- Navigation Arrows (Desktop) -->
+        <button @click="previousMedia()" 
+                class="hidden sm:block absolute left-8 text-white hover:text-zinc-400 active:text-zinc-400 transition p-2">
+            <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+            </svg>
+        </button>
+        
+        <button @click="nextMedia()" 
+                class="hidden sm:block absolute right-8 text-white hover:text-zinc-400 active:text-zinc-400 transition p-2">
+            <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+            </svg>
+        </button>
+        
+        <!-- Media Display -->
+        <div class="max-w-full max-h-full w-full px-4 sm:px-0 sm:max-w-5xl"
+             :style="'transform: translateX(' + lightboxSwipeOffset + 'px)'">
+            <template x-if="lightbox.item && lightbox.item.type === 'image'">
+                <img :src="lightbox.item.url" 
+                     class="w-full h-full object-contain max-h-[70vh] sm:max-h-[80vh] mx-auto"
+                     @dblclick="closeLightbox()">
+            </template>
+            
+            <template x-if="lightbox.item && lightbox.item.type === 'video'">
+                <video :src="lightbox.item.url" 
+                       class="w-full h-full object-contain max-h-[70vh] sm:max-h-[80vh] mx-auto" 
+                       controls 
+                       autoplay
+                       playsinline></video>
+            </template>
+            
+            <!-- Info Bar -->
+            <div class="mt-4 text-center px-4">
+                <p class="text-white text-xs sm:text-sm truncate" x-text="lightbox.item?.filename"></p>
+                <p class="text-zinc-400 text-[10px] sm:text-xs mt-1" 
+                   x-text="lightbox.item?.size + ' · ' + lightbox.item?.date"></p>
+                <!-- Swipe hint for mobile -->
+                <p class="sm:hidden text-zinc-600 text-[10px] mt-2">Swipe left/right to navigate</p>
             </div>
         </div>
-    </div>
-
-    <div x-show="lightbox.open" @click.self="closeLightbox()" class="fixed inset-0 bg-black z-[100] flex items-center justify-center">
-        <button @click="closeLightbox()" class="absolute top-6 right-6 text-white p-2 z-[110] bg-zinc-900 rounded-full"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-        <div class="max-w-full max-h-full p-4">
-            <template x-if="lightbox.item?.type === 'image'"><img :src="lightbox.item.url" class="max-h-[85vh] object-contain"></template>
-            <template x-if="lightbox.item?.type === 'video'"><video :src="lightbox.item.url" controls autoplay class="max-h-[85vh]"></video></template>
+        
+        <!-- Mobile Navigation Indicators -->
+        <div class="sm:hidden absolute bottom-8 left-0 right-0 flex justify-center gap-2 px-4">
+            <template x-for="(item, idx) in allMediaFlat.slice(Math.max(0, lightbox.index - 2), Math.min(allMediaFlat.length, lightbox.index + 3))" :key="idx">
+                <div class="w-2 h-2 rounded-full transition-all"
+                     :class="allMediaFlat.indexOf(item) === lightbox.index ? 'bg-white w-6' : 'bg-white/30'"></div>
+            </template>
         </div>
     </div>
 
     <script>
         function galleryApp() {
             return {
-                groupedMedia: {}, allMediaFlat: [], selectionMode: false, loading: true, searchQuery: '', showMenu: false, stats: { totalFiles: 0 },
-                lightbox: { open: false, item: null, index: 0 },
+                groupedMedia: {},
+                allMediaFlat: [],
+                selectionMode: false,
+                isDownloading: false,
+                loading: true,
+                errorMessage: '',
+                searchQuery: '',
+                showMenu: false,
+                stats: { totalFiles: 0, totalSize: '0 KB' },
+                
+                // Touch handling
+                touchStartX: 0,
+                touchStartY: 0,
+                touchStartTime: 0,
+                isSwiping: false,
+                lightboxSwipeOffset: 0,
+                
+                // Lightbox
+                lightbox: {
+                    open: false,
+                    item: null,
+                    index: 0
+                },
+                
+                // Persistent state
                 selectedItems: JSON.parse(localStorage.getItem('selectedItems') || '[]'),
                 customGroups: JSON.parse(localStorage.getItem('customGroups') || '[]'),
                 adminPassword: localStorage.getItem('adminPassword') || '',
 
                 async init() {
+                    // Watch for changes and save to localStorage
                     this.$watch('selectedItems', val => localStorage.setItem('selectedItems', JSON.stringify(val)));
                     this.$watch('customGroups', val => localStorage.setItem('customGroups', JSON.stringify(val)));
+
+                    // Load initial media
                     await this.fetchMedia();
-                    // Vercel Polling (replaces Socket.io)
-                    setInterval(() => this.fetchMedia(), 30000);
+                    
+                    // Setup polling for updates (Vercel serverless compatible)
+                    setInterval(() => this.fetchMedia(), 30000); // Poll every 30 seconds
+                    
+                    // Keyboard shortcuts
+                    document.addEventListener('keydown', (e) => {
+                        if (this.lightbox.open) {
+                            if (e.key === 'Escape') this.closeLightbox();
+                            if (e.key === 'ArrowLeft') this.previousMedia();
+                            if (e.key === 'ArrowRight') this.nextMedia();
+                        }
+                    });
+                    
+                    // Close menu when clicking outside
+                    document.addEventListener('click', (e) => {
+                        if (this.showMenu && !e.target.closest('header')) {
+                            this.showMenu = false;
+                        }
+                    });
                 },
 
                 async fetchMedia() {
                     try {
                         const res = await fetch('/api/history');
+                        if (!res.ok) throw new Error('Failed to load media');
+                        
                         const data = await res.json();
                         this.allMediaFlat = data;
+                        
+                        // Group media by date
                         const groups = {};
                         data.forEach(item => {
                             if (!groups[item.date]) groups[item.date] = [];
                             groups[item.date].push(item);
                         });
+                        
                         this.groupedMedia = groups;
-                        this.stats.totalFiles = data.length;
-                    } catch (e) { console.error("Cloud error"); }
-                    finally { this.loading = false; }
-                },
-
-                handleItemClick(item) {
-                    if (this.selectionMode) {
-                        const idx = this.selectedItems.findIndex(i => i.url === item.url);
-                        if (idx > -1) this.selectedItems.splice(idx, 1);
-                        else this.selectedItems.push(item);
-                    } else {
-                        this.lightbox.item = item;
-                        this.lightbox.open = true;
+                        
+                        // Fetch detailed stats
+                        await this.fetchStats();
+                        
+                    } catch (err) {
+                        if (this.loading) {
+                            this.showError('Failed to load media');
+                        }
+                        console.error('Cloud error:', err);
+                    } finally {
+                        this.loading = false;
                     }
                 },
 
-                async deleteSelected() {
-                    if (!confirm(`Delete ${this.selectedItems.length} items?`)) return;
-                    if (!this.adminPassword) {
-                        this.adminPassword = prompt('Admin Password:');
-                        localStorage.setItem('adminPassword', this.adminPassword);
+                async fetchStats() {
+                    try {
+                        const res = await fetch('/api/stats');
+                        if (res.ok) {
+                            const stats = await res.json();
+                            this.stats = stats;
+                        }
+                    } catch (err) {
+                        console.error('Failed to fetch stats:', err);
+                        // Fallback to basic count
+                        this.stats.totalFiles = this.allMediaFlat.length;
                     }
-                    // Adjusted to match your delete.js handler
-                    for (let item of this.selectedItems) {
-                        await fetch('/api/delete', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${this.adminPassword}` },
-                            body: JSON.stringify({ url: item.url, filename: item.filename })
-                        });
-                    }
-                    this.selectedItems = [];
-                    await this.fetchMedia();
                 },
 
                 get filteredMedia() {
                     if (!this.searchQuery) return this.groupedMedia;
-                    const q = this.searchQuery.toLowerCase();
+                    
+                    const query = this.searchQuery.toLowerCase();
                     const filtered = {};
+                    
                     for (let date in this.groupedMedia) {
-                        const matches = this.groupedMedia[date].filter(i => i.filename.toLowerCase().includes(q));
-                        if (matches.length) filtered[date] = matches;
+                        const matches = this.groupedMedia[date].filter(item => 
+                            item.filename.toLowerCase().includes(query) ||
+                            item.date.toLowerCase().includes(query)
+                        );
+                        if (matches.length > 0) {
+                            filtered[date] = matches;
+                        }
                     }
+                    
                     return filtered;
                 },
 
-                isSelected(item) { return this.selectedItems.some(i => i.url === item.url); },
-                toggleSelectionMode() { this.selectionMode = !this.selectionMode; if(!this.selectionMode) this.selectedItems = []; },
-                closeLightbox() { this.lightbox.open = false; },
+                handleTouchStart(event, item) {
+                    this.touchStartX = event.touches[0].clientX;
+                    this.touchStartY = event.touches[0].clientY;
+                    this.touchStartTime = Date.now();
+                },
+
+                handleTouchEnd(event) {
+                    // Quick tap detection for mobile
+                    const touchDuration = Date.now() - this.touchStartTime;
+                    if (touchDuration < 200) {
+                        // This is a tap, handled by @click
+                    }
+                },
+
+                handleItemClick(item) {
+                    if (this.selectionMode) {
+                        this.toggleSelect(item);
+                    } else {
+                        this.openLightbox(item);
+                    }
+                },
+
+                handleLightboxTouchStart(event) {
+                    if (event.target.tagName === 'VIDEO') return; // Don't interfere with video controls
+                    this.touchStartX = event.touches[0].clientX;
+                    this.touchStartTime = Date.now();
+                    this.isSwiping = false;
+                },
+
+                handleLightboxTouchMove(event) {
+                    if (event.target.tagName === 'VIDEO') return;
+                    const touchX = event.touches[0].clientX;
+                    const diff = touchX - this.touchStartX;
+                    
+                    if (Math.abs(diff) > 10) {
+                        this.isSwiping = true;
+                        this.lightboxSwipeOffset = diff * 0.5; // Dampening effect
+                    }
+                },
+
+                handleLightboxTouchEnd(event) {
+                    if (event.target.tagName === 'VIDEO') return;
+                    
+                    const touchEndX = event.changedTouches[0].clientX;
+                    const diff = touchEndX - this.touchStartX;
+                    const touchDuration = Date.now() - this.touchStartTime;
+                    
+                    // Swipe detection
+                    if (this.isSwiping && Math.abs(diff) > 50) {
+                        if (diff > 0) {
+                            this.previousMedia();
+                        } else {
+                            this.nextMedia();
+                        }
+                    } else if (touchDuration < 200 && !this.isSwiping) {
+                        // Quick tap to close
+                        this.closeLightbox();
+                    }
+                    
+                    // Reset
+                    this.lightboxSwipeOffset = 0;
+                    this.isSwiping = false;
+                },
+
+                toggleSelect(item) {
+                    const index = this.selectedItems.findIndex(i => i.url === item.url);
+                    if (index > -1) {
+                        this.selectedItems.splice(index, 1);
+                    } else {
+                        this.selectedItems.push(item);
+                    }
+                },
+
+                isSelected(item) {
+                    return this.selectedItems.some(i => i.url === item.url);
+                },
+
+                toggleSelectionMode() {
+                    this.selectionMode = !this.selectionMode;
+                    if (!this.selectionMode) {
+                        this.selectedItems = [];
+                    }
+                },
+
+                openLightbox(item) {
+                    this.lightbox.item = item;
+                    this.lightbox.index = this.allMediaFlat.findIndex(i => i.url === item.url);
+                    this.lightbox.open = true;
+                    document.body.classList.add('lightbox-open');
+                },
+
+                closeLightbox() {
+                    this.lightbox.open = false;
+                    this.lightbox.item = null;
+                    this.lightboxSwipeOffset = 0;
+                    document.body.classList.remove('lightbox-open');
+                },
+
+                previousMedia() {
+                    if (this.lightbox.index > 0) {
+                        this.lightbox.index--;
+                        this.lightbox.item = this.allMediaFlat[this.lightbox.index];
+                    }
+                },
+
+                nextMedia() {
+                    if (this.lightbox.index < this.allMediaFlat.length - 1) {
+                        this.lightbox.index++;
+                        this.lightbox.item = this.allMediaFlat[this.lightbox.index];
+                    }
+                },
+
+                async deleteSelected() {
+                    if (!confirm(`Delete ${this.selectedItems.length} items permanently?`)) return;
+                    
+                    if (!this.adminPassword) {
+                        const pwd = prompt('Enter admin password:');
+                        if (!pwd) return;
+                        this.adminPassword = pwd;
+                        localStorage.setItem('adminPassword', pwd);
+                    }
+                    
+                    for (let item of this.selectedItems) {
+                        try {
+                            await fetch('/api/delete', {
+                                method: 'POST',
+                                headers: { 
+                                    'Content-Type': 'application/json',
+                                    'Authorization': `Bearer ${this.adminPassword}`
+                                },
+                                body: JSON.stringify({ 
+                                    url: item.url, 
+                                    filename: item.filename 
+                                })
+                            });
+                        } catch (err) {
+                            this.showError(`Failed to delete ${item.filename}`);
+                        }
+                    }
+                    
+                    this.selectedItems = [];
+                    this.selectionMode = false;
+                    
+                    // Refresh media after deletion
+                    await this.fetchMedia();
+                },
+
                 createGroupFromSelected() {
-                    const name = prompt("Name:");
-                    if (name) { this.customGroups.push({ name, items: [...this.selectedItems] }); this.selectedItems = []; }
+                    const name = prompt("Collection Name:");
+                    if (name) {
+                        this.customGroups.push({ name, items: [...this.selectedItems] });
+                        this.selectedItems = [];
+                        this.selectionMode = false;
+                    }
+                },
+
+                deleteGroup(index) {
+                    if (confirm('Delete this collection?')) {
+                        this.customGroups.splice(index, 1);
+                    }
+                },
+
+                clearCache() {
+                    if (confirm("Reset local selection and groups?")) {
+                        localStorage.clear();
+                        window.location.reload();
+                    }
+                },
+
+                async downloadListIndividual(urls) {
+                    this.isDownloading = true;
+                    for (let url of urls) {
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = url.split('/').pop();
+                        a.click();
+                        await new Promise(r => setTimeout(r, 300));
+                    }
+                    this.isDownloading = false;
+                },
+
+                async downloadAllIndividual() {
+                    try {
+                        const urls = this.allMediaFlat.map(item => item.url);
+                        await this.downloadListIndividual(urls);
+                    } catch (err) {
+                        this.showError('Failed to download all');
+                    }
+                },
+
+                showError(message) {
+                    this.errorMessage = message;
+                    setTimeout(() => this.errorMessage = '', 4000);
                 }
             }
         }
