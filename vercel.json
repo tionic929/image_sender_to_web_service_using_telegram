@@ -1,0 +1,7 @@
+{
+  "rewrites": [
+    { "source": "/api/history", "destination": "/api/history.js" },
+    { "source": "/api/webhook", "destination": "/api/webhook.js" },
+    { "source": "/api/delete", "destination": "/api/delete.js" }
+  ]
+}
